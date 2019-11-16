@@ -1,11 +1,11 @@
-package main
+package goutils_test
 
 import (
     "fmt"
     "github.com/watsonserve/goutils"
 )
 
-func main() {
+func ExampleGetOptions() {
     options := []goutils.Option { 
         {
             Opt: 'h',

@@ -21,6 +21,7 @@ func parseOption(argp string, length int) (string, string) {
     return key, value
 }
 
+// 解析命令行参数
 func GetOptions(options []Option) (map[string]string, []string) {
     table := make(map[string]string)
     params := make([]string, 0)
