@@ -23,7 +23,7 @@ func GetConf(filename string) (map[string][]string, error) {
             continue
         }
         // 键值对以“=”分割
-        kv := strings.SplitN(line, "=", 1)
+        kv := strings.SplitN(line, "=", 2)
         // 处理掉空字符
         key := strings.Trim(kv[0], " \t")
         // 该key是否已存在
