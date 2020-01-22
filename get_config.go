@@ -19,7 +19,7 @@ func GetConf(filename string) (map[string][]string, error) {
         // 处理掉行首尾空字符
         line = strings.Trim(line, " \r\t")
         // “#”开头为注释
-        if '#' == line[0] {
+        if 0 == len(line) || '#' == line[0] {
             continue
         }
         // 键值对以“=”分割
