@@ -12,7 +12,7 @@ import (
  * 这里使用的是每个链接启动一个新的go程的模型
  * 高并发的话，性能取决于go语言的协程能力
  */
-func TLSListen(port string, crt string, key string) (net.Listener, error) {
+func TLSSocket(port string, crt string, key string) (net.Listener, error) {
     cert, err := tls.LoadX509KeyPair(crt, key)
     if nil != err {
         return nil, err
@@ -39,7 +39,7 @@ func TLSListen(port string, crt string, key string) (net.Listener, error) {
  * 这里使用的是每个链接启动一个新的go程的模型
  * 高并发的话，性能取决于go语言的协程能力
  */
-func Listen(port string) (net.Listener, error) {
+func Socket(port string) (net.Listener, error) {
     ln, err := net.Listen("tcp", port)
     if nil != err {
         return nil, err
