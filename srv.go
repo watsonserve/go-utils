@@ -30,9 +30,9 @@ func TLSSocket(port string, crt string, key string) (net.Listener, error) {
     })
     if nil != err {
         return nil, err
-	}
+    }
     defer ln.Close()
-	return ln, nil
+    return ln, nil
 }
 
 /*
