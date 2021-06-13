@@ -18,5 +18,5 @@ func ExampleGetConf() {
         return
     }
     fmt.Println(conf)
-    // output: { foo: ["bar"], foos: ["1", "2"], null: [] }
+    // output: map[foo:[bar] foos:[1 2] null:[]]
 }
