@@ -44,7 +44,7 @@ func line(foo_s int64, foo_e int64, bar_s int64, bar_e int64) (vec int, start in
     return 0, tar_s, tar_e
 }
 
-func _NewTaskLink() *RangeLink_t {
+func _NewRangeLink() *RangeLink_t {
     this := &RangeLink_t{
         length: 0,
         header: RangeNode_t {
@@ -58,8 +58,8 @@ func _NewTaskLink() *RangeLink_t {
     return this
 }
 
-func NewList(arr []Range_t) *RangeLink_t {
-    this := _NewTaskLink()
+func NewRangeLink(arr []Range_t) *RangeLink_t {
+    this := _NewRangeLink()
     if nil == arr {
         return this
     }
@@ -203,7 +203,7 @@ func (this *RangeLink_t) Converse(start int64, end int64) *RangeLink_t {
     if end <= start {
         return nil
     }
-    ret := _NewTaskLink()
+    ret := _NewRangeLink()
     _start := start
     _end := end
     p := this.header.Next
