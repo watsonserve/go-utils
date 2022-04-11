@@ -1,3 +1,4 @@
+
 package goutils_test
 
 import (
@@ -13,10 +14,7 @@ func ExampleGetConf() {
     // foos = 2
     // null
     //
-    conf, err := goutils.GetConf("test.conf")
-    if nil != err {
-        return
-    }
-    fmt.Println(conf)
-    // output: map[foo:[bar] foos:[1 2] null:[]]
+    link := goutils.NewList(nil)
+    link.Mount(20, 80)
+    fmt.Println(link.ToArray())
 }
