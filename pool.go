@@ -8,12 +8,14 @@ type Pool_t struct {
 	count      int
 }
 
-type Poolable interface {
-	WorkerInit() error
-	Worker(ranger Any_t) Any_t
+type WorkerGenerator func() (Worker, error)
+
+type Worker interface {
+	Work(params Any_t) Any_t
+	Destroy()
 }
 
-func NewPool(poolable Poolable, size int) *Pool_t {
+func NewPool(workerInit WorkerGenerator, size int) *Pool_t {
 	taskPipe := make(chan Any_t, size)
 	notifyPipe := make(chan Any_t, size<<1)
 
@@ -24,19 +26,20 @@ func NewPool(poolable Poolable, size int) *Pool_t {
 	}
 
 	for pool.count = 0; pool.count < size; pool.count++ {
-		go pool.worker(taskPipe, notifyPipe, poolable)
+		go pool.thread(taskPipe, notifyPipe, workerInit)
 	}
 
 	return pool
 }
 
-func (pool *Pool_t) worker(taskPipe chan Any_t, notifyPipe chan Any_t, poolable Poolable) {
-	err := poolable.WorkerInit()
+func (pool *Pool_t) thread(taskPipe chan Any_t, notifyPipe chan Any_t, workerInit WorkerGenerator) {
+	worker, err := workerInit()
 	if nil == err {
-		for ranger := <-taskPipe; nil != ranger; ranger = <-taskPipe {
-			notifyPipe <- poolable.Worker(ranger)
+		for params := <-taskPipe; nil != params; params = <-taskPipe {
+			notifyPipe <- worker.Work(params)
 		}
 	}
+	worker.Destroy()
 	// 得到的任务为nil则传出nil
 	notifyPipe <- nil
 }
@@ -51,5 +54,8 @@ func (pool *Pool_t) Push(foo Any_t) {
 
 func (pool *Pool_t) Wait() Any_t {
 	ret := <-pool.notifyPipe
+	if nil == ret {
+		pool.count--
+	}
 	return ret
 }
