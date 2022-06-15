@@ -7,6 +7,7 @@ import (
 )
 
 type Option struct {
+	Name      string
 	Opt       byte
 	Option    string
 	HasParams bool
@@ -39,6 +40,9 @@ func GetOptions(options []Option) (map[string]string, []string) {
 	optionsMap := make(map[byte]*Option)
 	for i := 0; i < len(options); i++ {
 		opt := options[i].Opt
+		if 0 == opt {
+			continue
+		}
 		optionsMap[opt] = &options[i]
 	}
 
@@ -53,18 +57,21 @@ func GetOptions(options []Option) (map[string]string, []string) {
 		}
 
 		argpLen := len(argp)
-		// 只有一个横线
+
 		if argpLen < 2 {
-			// TODO
+			// TODO 只有一个横线
 			continue
 		}
 
 		// 长选项 option
 		if '-' == argp[1] {
-			// 只有两个横线
 			if 2 < argpLen {
 				key, value := parseOption(argp, argpLen)
 				table[key] = value
+			} else {
+				// 只有两个横线
+				params = append(params, strings.Join(argv[i+1:], " "))
+				return table, params
 			}
 			continue
 		}
@@ -78,8 +85,7 @@ func GetOptions(options []Option) (map[string]string, []string) {
 			if nil == opt {
 				continue
 			}
-			key := opt.Option
-			table[key] = ""
+			table[opt.Name] = ""
 		}
 		// 最后一个选项opt需要判断是否需要参数
 		opt := optionsMap[argp[lst]]
@@ -88,7 +94,7 @@ func GetOptions(options []Option) (map[string]string, []string) {
 			if '-' == payload[0] {
 				continue
 			}
-			table[opt.Option] = payload
+			table[opt.Name] = payload
 			i++
 		}
 	}
@@ -96,19 +102,19 @@ func GetOptions(options []Option) (map[string]string, []string) {
 	return table, params
 }
 
-func GenHelp(options []Option) string {
-	ret := os.Args[0] + " [opt argument]\n"
+func GenHelp(options []Option, desc string) string {
+	ret := os.Args[0] + " [opt argument]" + desc + "\n"
 	for i := 0; i < len(options); i++ {
 		item := options[i]
 		opt := "   "
-		if '\x00' != item.Opt {
+		if 0 != item.Opt {
 			opt = fmt.Sprintf("-%c,", item.Opt)
 		}
 		option := "  \t"
 		if "" != item.Option {
 			option = fmt.Sprintf("--%s", item.Option)
 		}
-		ret += fmt.Sprintf("  %s  %s %s\n", opt, option, item.Desc)
+		ret += fmt.Sprintf("  %s  %s\t%s\n", opt, option, item.Desc)
 	}
 	return ret + "\n"
 }
