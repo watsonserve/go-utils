@@ -6,6 +6,11 @@ import (
     "fmt"
     "io"
     "net"
+	"log"
+	"net"
+	"net/http"
+
+	http3 "github.com/lucas-clemente/quic-go/http3"
 )
 
 /*
@@ -81,4 +86,56 @@ func (this *Stream) Send(content string) {
 func (this *Stream) End(content string) {
     fmt.Fprint(this.sock, content)
     this.sock.Close()
+}
+
+func ListenAndHttp(network, addr, crt, key string, handler http.Handler) {
+	var err error
+
+	switch network {
+	case "quic":
+		err = http3.ListenAndServeQUIC(addr, crt, key, handler)
+	case "tcp":
+		fallthrough
+	case "unix":
+		ln, _err := net.Listen(network, addr)
+
+		if nil == _err {
+			if "" != crt && "" != key {
+				_err = http.ServeTLS(ln, handler, crt, key)
+			} else {
+				_err = http.Serve(ln, handler)
+			}
+		}
+		err = _err
+	}
+	if nil != err {
+		log.Fatal("failed to start server", err)
+	}
+}
+
+func ServeHttp(addr map[string]string, handler http.Handler, crt, key string) {
+	addrTcp := addr["tcp"]
+	addrTcpLts := addr["tcplts"]
+	addrUnix := addr["unix"]
+	addrQuic := addr["quic"]
+
+	if "" != addrTcp {
+		fmt.Printf("listen tcp: %s\n", addrTcp)
+		go ListenAndHttp("tcp", addrTcp, "", "", handler)
+	}
+
+	if "" != addrUnix {
+		fmt.Printf("listen unix: %s\n", addrUnix)
+		go ListenAndHttp("unix", addrUnix, "", "", handler)
+	}
+
+	if "" != addrTcpLts {
+		fmt.Printf("listen tls: %s\n", addrTcpLts)
+		go ListenAndHttp("tcp", addrTcpLts, crt, key, handler)
+	}
+
+	if "" != addrQuic {
+		fmt.Printf("listen quic: %s\n", addrQuic)
+		go ListenAndHttp("quic", addrQuic, crt, key, handler)
+	}
 }
