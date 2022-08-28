@@ -112,21 +112,25 @@ func ListenAndHttp(network, addr, crt, key string, handler http.Handler) {
 	}
 }
 
-type AddressSet struct {
+type ListenOptions struct {
+	Unix string
 	Tcp string
 	TcpLts string
-	Unix string
 	Quic string
+    Crt string
+    Key string
 }
 
-func ServeHttp(addr *AddressSet, handler http.Handler, crt, key string) {
-    if nil == addr {
+func ServeHttp(cfg *ListenOptions, handler http.Handler) {
+    if nil == cfg {
         return
     }
-	addrTcp := addr.Tcp
-	addrTcpLts := addr.TcpLts
-	addrUnix := addr.Unix
-	addrQuic := addr.Quic
+	addrUnix := cfg.Unix
+	addrTcp := cfg.Tcp
+	addrTcpLts := cfg.TcpLts
+	addrQuic := cfg.Quic
+    crt := cfg.Crt
+    key := cfg.Key
 
 	if "" != addrTcp {
 		fmt.Printf("listen tcp: %s\n", addrTcp)
