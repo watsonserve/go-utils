@@ -89,7 +89,7 @@ func GetOptions(options []Option) (map[string]string, []string) {
 		}
 		// 最后一个选项opt需要判断是否需要参数
 		opt := optionsMap[argp[lst]]
-		if opt.HasParams && i+1 < argc {
+		if nil != opt && opt.HasParams && i+1 < argc {
 			payload := argv[i+1]
 			if '-' == payload[0] {
 				continue
