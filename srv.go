@@ -7,7 +7,6 @@ import (
     "io"
     "net"
 	"log"
-	"net"
 	"net/http"
 
 	http3 "github.com/lucas-clemente/quic-go/http3"
@@ -113,11 +112,21 @@ func ListenAndHttp(network, addr, crt, key string, handler http.Handler) {
 	}
 }
 
-func ServeHttp(addr map[string]string, handler http.Handler, crt, key string) {
-	addrTcp := addr["tcp"]
-	addrTcpLts := addr["tcplts"]
-	addrUnix := addr["unix"]
-	addrQuic := addr["quic"]
+type AddressSet struct {
+	Tcp string
+	TcpLts string
+	Unix string
+	Quic string
+}
+
+func ServeHttp(addr *AddressSet, handler http.Handler, crt, key string) {
+    if nil == addr {
+        return
+    }
+	addrTcp := addr.Tcp
+	addrTcpLts := addr.TcpLts
+	addrUnix := addr.Unix
+	addrQuic := addr.Quic
 
 	if "" != addrTcp {
 		fmt.Printf("listen tcp: %s\n", addrTcp)
