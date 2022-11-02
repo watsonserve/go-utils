@@ -1,6 +1,6 @@
 module github.com/watsonserve/goutils
 
-go 1.18
+go 1.19
 
 require github.com/lucas-clemente/quic-go v0.29.0
 
