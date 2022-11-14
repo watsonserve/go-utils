@@ -2,6 +2,7 @@ package goutils
 
 import (
 	"crypto/md5"
+	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
 	"time"
@@ -21,6 +22,10 @@ func DecodeBase64(msg string) (string, error) {
 
 func MD5(src string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(src)))
+}
+
+func SHA1(src string) string {
+	return fmt.Sprintf("%x", sha1.Sum([]byte(src)))
 }
 
 func NowNano() uint64 {
