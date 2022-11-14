@@ -42,6 +42,6 @@ func Random() float64 {
 }
 
 func RandomString(length int) string {
-	foo := fmt.Sprintf("%x", int64(Random()*10000000))
-	return EncodeBase64(foo)
+	foo := fmt.Sprintf("%d", int64(Random()*10000000))
+	return EncodeBase64(MD5(foo))[0:length]
 }
