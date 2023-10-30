@@ -9,7 +9,7 @@ import (
 	"net"
 	"net/http"
 
-	http3 "github.com/lucas-clemente/quic-go/http3"
+	http3 "github.com/quic-go/quic-go/http3"
 )
 
 /*
