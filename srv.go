@@ -4,14 +4,11 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
-	"os"
 
 	"github.com/quic-go/quic-go"
 	http3 "github.com/quic-go/quic-go/http3"
@@ -69,27 +66,27 @@ func InitStream(sock io.ReadWriteCloser) *Stream {
 	}
 }
 
-func (this *Stream) ReadLine() (string, error) {
-	this.scanner.Scan()
-	err := this.scanner.Err()
+func (st *Stream) ReadLine() (string, error) {
+	st.scanner.Scan()
+	err := st.scanner.Err()
 	if nil != err {
 		return "", err
 	}
-	msg := this.scanner.Text()
+	msg := st.scanner.Text()
 	fmt.Printf("c: %s\n", msg)
 	return msg, nil
 }
 
 // 发送
-func (this *Stream) Send(content string) {
+func (st *Stream) Send(content string) {
 	fmt.Printf("s: %s\n", content)
-	fmt.Fprint(this.sock, content)
+	fmt.Fprint(st.sock, content)
 }
 
 // 发送并关闭
-func (this *Stream) End(content string) {
-	fmt.Fprint(this.sock, content)
-	this.sock.Close()
+func (st *Stream) End(content string) {
+	fmt.Fprint(st.sock, content)
+	st.sock.Close()
 }
 
 func ListenAndHttp(network, addr, crt, key string, handler http.Handler) {
@@ -158,38 +155,8 @@ func ServeHttp(cfg *ListenOptions, handler http.Handler) {
 	}
 }
 
-func GenTlsSrvConfig(crt, key, cliCA string) (*tls.Config, error) {
-	cert, err := tls.LoadX509KeyPair(crt, key)
-	if nil != err {
-		return nil, err
-	}
-
-	caCertPool := x509.NewCertPool()
-	clientAuth := tls.NoClientCert
-	if "" != cliCA {
-		clientAuth = tls.RequireAndVerifyClientCert
-
-		certBytes, err := os.ReadFile(cliCA)
-		if nil == err {
-			if !caCertPool.AppendCertsFromPEM(certBytes) {
-				err = errors.New("failed to parse root certificate")
-			}
-		}
-
-		if nil != err {
-			return nil, err
-		}
-	}
-
-	return &tls.Config{
-		ClientAuth:   clientAuth,
-		Certificates: []tls.Certificate{cert},
-		ClientCAs:    caCertPool,
-	}, nil
-}
-
-func QuicListenAddr(network, crt, key, cliCA string) (*quic.Listener, error) {
-	tlsCfg, err := GenTlsSrvConfig(crt, key, cliCA)
+func QuicListenAddr(network, crt, key, ca string) (*quic.Listener, error) {
+	tlsCfg, err := GenTlsSrvConfig(crt, key, ca, false)
 	if nil != err {
 		return nil, err
 	}
@@ -197,8 +164,8 @@ func QuicListenAddr(network, crt, key, cliCA string) (*quic.Listener, error) {
 	return quic.ListenAddr(network, tlsCfg, nil)
 }
 
-func QuicDial(network, crt, key string) (quic.Connection, error) {
-	tlsCfg, err := GenTlsSrvConfig(crt, key, "")
+func QuicDial(network, crt, key, ca string) (quic.Connection, error) {
+	tlsCfg, err := GenTlsSrvConfig(crt, key, ca, true)
 	if nil != err {
 		return nil, err
 	}
