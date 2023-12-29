@@ -2,13 +2,18 @@ package goutils
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
 	"net/http"
+	"os"
 
+	"github.com/quic-go/quic-go"
 	http3 "github.com/quic-go/quic-go/http3"
 )
 
@@ -151,4 +156,52 @@ func ServeHttp(cfg *ListenOptions, handler http.Handler) {
 		fmt.Printf("listen quic: %s\n", addrQuic)
 		go ListenAndHttp("quic", addrQuic, crt, key, handler)
 	}
+}
+
+func GenTlsSrvConfig(crt, key, cliCA string) (*tls.Config, error) {
+	cert, err := tls.LoadX509KeyPair(crt, key)
+	if nil != err {
+		return nil, err
+	}
+
+	caCertPool := x509.NewCertPool()
+	clientAuth := tls.NoClientCert
+	if "" != cliCA {
+		clientAuth = tls.RequireAndVerifyClientCert
+
+		certBytes, err := os.ReadFile(cliCA)
+		if nil == err {
+			if !caCertPool.AppendCertsFromPEM(certBytes) {
+				err = errors.New("failed to parse root certificate")
+			}
+		}
+
+		if nil != err {
+			return nil, err
+		}
+	}
+
+	return &tls.Config{
+		ClientAuth:   clientAuth,
+		Certificates: []tls.Certificate{cert},
+		ClientCAs:    caCertPool,
+	}, nil
+}
+
+func QuicListenAddr(network, crt, key, cliCA string) (*quic.Listener, error) {
+	tlsCfg, err := GenTlsSrvConfig(crt, key, cliCA)
+	if nil != err {
+		return nil, err
+	}
+
+	return quic.ListenAddr(network, tlsCfg, nil)
+}
+
+func QuicDial(network, crt, key string) (quic.Connection, error) {
+	tlsCfg, err := GenTlsSrvConfig(crt, key, "")
+	if nil != err {
+		return nil, err
+	}
+
+	return quic.DialAddr(context.Background(), network, tlsCfg, nil)
 }
