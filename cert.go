@@ -23,6 +23,10 @@ func LoadCryptoObj(crt, key, ca string) ([]tls.Certificate, *x509.CertPool, erro
 		return nil, nil, err
 	}
 
+	if "" == ca {
+		return []tls.Certificate{cert}, nil, nil
+	}
+
 	caCertPool := x509.NewCertPool()
 	if nil != addCert(caCertPool, ca) {
 		return nil, nil, err
@@ -31,22 +35,39 @@ func LoadCryptoObj(crt, key, ca string) ([]tls.Certificate, *x509.CertPool, erro
 	return []tls.Certificate{cert}, caCertPool, nil
 }
 
-func GenTlsSrvConfig(crt, key, ca string, forClient bool) (*tls.Config, error) {
+type TlsFlag int
+
+const (
+	TLSFLAG_IGNORE = 0 // 000
+	TLSFLAG_CLIENT = 1 // 001
+	TLSFLAG_SERVER = 2 // 010
+	TLSFLAG_VERIFY = 3 // 011
+)
+
+func GenTlsConfig(flag TlsFlag, crt, key, ca string) (*tls.Config, error) {
+	if TLSFLAG_IGNORE == flag {
+		return &tls.Config{InsecureSkipVerify: true}, nil
+	}
+
 	certs, caCertPool, err := LoadCryptoObj(crt, key, ca)
 	if nil != err {
 		return nil, err
 	}
 
-	cfg := &tls.Config{
-		Certificates: certs,
+	cfg := &tls.Config{Certificates: certs}
+	if TLSFLAG_VERIFY == flag {
+		cfg.ClientAuth = tls.RequireAndVerifyClientCert
 	}
 
-	if forClient {
-		cfg.RootCAs = caCertPool
-	} else {
-		cfg.ClientCAs = caCertPool
-		cfg.ClientAuth = tls.RequireAndVerifyClientCert
+	if "" == ca {
+		return cfg, nil
+	}
 
+	switch flag {
+	case TLSFLAG_CLIENT:
+		cfg.RootCAs = caCertPool
+	case TLSFLAG_SERVER:
+		cfg.ClientCAs = caCertPool
 	}
 
 	return cfg, nil

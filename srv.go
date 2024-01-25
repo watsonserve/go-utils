@@ -155,8 +155,13 @@ func ServeHttp(cfg *ListenOptions, handler http.Handler) {
 	}
 }
 
-func QuicListenAddr(network, crt, key, ca string) (*quic.Listener, error) {
-	tlsCfg, err := GenTlsSrvConfig(crt, key, ca, false)
+func QuicListenAddr(network, crt, key, ca string, verifyClient bool) (*quic.Listener, error) {
+	var flag TlsFlag = TLSFLAG_SERVER
+	if verifyClient {
+		flag = TLSFLAG_VERIFY
+	}
+
+	tlsCfg, err := GenTlsConfig(flag, crt, key, ca)
 	if nil != err {
 		return nil, err
 	}
@@ -164,11 +169,16 @@ func QuicListenAddr(network, crt, key, ca string) (*quic.Listener, error) {
 	return quic.ListenAddr(network, tlsCfg, nil)
 }
 
-func QuicDial(network, crt, key, ca string) (quic.Connection, error) {
-	tlsCfg, err := GenTlsSrvConfig(crt, key, ca, true)
+func QuicDial(network, crt, key, ca string, cfg *quic.Config, ignore bool) (quic.Connection, error) {
+	var flag TlsFlag = TLSFLAG_CLIENT
+	if ignore {
+		flag = TLSFLAG_IGNORE
+	}
+
+	tlsCfg, err := GenTlsConfig(flag, crt, key, ca)
 	if nil != err {
 		return nil, err
 	}
 
-	return quic.DialAddr(context.Background(), network, tlsCfg, nil)
+	return quic.DialAddr(context.Background(), network, tlsCfg, cfg)
 }
