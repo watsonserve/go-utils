@@ -95,13 +95,13 @@ func ListenAndHttp(network, addr, crt, key string, handler http.Handler) {
 	switch network {
 	case "quic":
 		err = http3.ListenAndServeQUIC(addr, crt, key, handler)
-	case "tcp":
-		fallthrough
 	case "unix":
+		fallthrough
+	case "tcp":
 		ln, _err := net.Listen(network, addr)
 
 		if nil == _err {
-			if "" != crt && "" != key {
+			if "tcp" == network && "" != crt && "" != key {
 				_err = http.ServeTLS(ln, handler, crt, key)
 			} else {
 				_err = http.Serve(ln, handler)
@@ -155,7 +155,7 @@ func ServeHttp(cfg *ListenOptions, handler http.Handler) {
 	}
 }
 
-func QuicListenAddr(network, crt, key, ca string, verifyClient bool) (*quic.Listener, error) {
+func QuicListenAddr(network, crt, key, ca string, cfg *quic.Config, verifyClient bool) (*quic.Listener, error) {
 	var flag TlsFlag = TLSFLAG_SERVER
 	if verifyClient {
 		flag = TLSFLAG_VERIFY
@@ -166,7 +166,7 @@ func QuicListenAddr(network, crt, key, ca string, verifyClient bool) (*quic.List
 		return nil, err
 	}
 
-	return quic.ListenAddr(network, tlsCfg, nil)
+	return quic.ListenAddr(network, tlsCfg, cfg)
 }
 
 func QuicDial(network, crt, key, ca string, cfg *quic.Config, ignore bool) (quic.Connection, error) {
