@@ -55,19 +55,14 @@ func GenTlsConfig(flag TlsFlag, crt, key, ca string) (*tls.Config, error) {
 	}
 
 	cfg := &tls.Config{Certificates: certs}
-	if TLSFLAG_VERIFY == flag {
-		cfg.ClientAuth = tls.RequireAndVerifyClientCert
-	}
-
-	if "" == ca {
-		return cfg, nil
-	}
 
 	switch flag {
 	case TLSFLAG_CLIENT:
 		cfg.RootCAs = caCertPool
-	case TLSFLAG_SERVER:
+	case TLSFLAG_VERIFY:
+		cfg.ClientAuth = tls.RequireAndVerifyClientCert
 		cfg.ClientCAs = caCertPool
+	default:
 	}
 
 	return cfg, nil
