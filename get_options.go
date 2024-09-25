@@ -14,8 +14,8 @@ type Option struct {
 	Desc      string
 }
 
-func parseOption(argp string, length int) (string, string) {
-	kv := strings.Split(argp[2:length], "=")
+func parseLongOption(argp string) (string, string) {
+	kv := strings.SplitN(argp[2:], "=", 2)
 	key := kv[0]
 	value := ""
 	if 1 < len(kv) {
@@ -23,6 +23,45 @@ func parseOption(argp string, length int) (string, string) {
 	}
 	return key, value
 }
+
+/**
+ * @returns table and key which want a value
+ */
+func parseShortOption(table map[string]string, argp string, optionsMap map[byte]*Option) string {
+	for i := 1; i < len(argp); i++ {
+		info := optionsMap[argp[i]]
+		// unknow opt
+		if nil == info {
+			continue
+		}
+		// a flag
+		if !info.HasParams {
+			table[info.Name] = ""
+			continue
+		}
+		// a option
+		val := argp[i+1:]
+		if "" == val {
+			return info.Name
+		}
+
+		table[info.Name] = val
+		break
+	}
+
+	return ""
+}
+
+// -o             short option without value
+// -oo            short option list without any value
+// -oValue        short option and it's value
+// -o value       short option and it's value
+// -ooValue       short options and a value
+// -oo Value      short options and a value
+// --option       long option
+// --option=value long option
+// -- foo bar     payload no split
+// value          payload or value of a option
 
 // parse commandline params
 func GetOptions(options []Option) (map[string]string, []string) {
@@ -37,66 +76,56 @@ func GetOptions(options []Option) (map[string]string, []string) {
 		return table, params
 	}
 
-	optionsMap := make(map[byte]*Option)
+	optsMap := make(map[byte]*Option)
+	optionsMap := make(map[string]*Option)
 	for i := 0; i < len(options); i++ {
-		opt := options[i].Opt
-		if 0 == opt {
-			continue
+		info := &(options[i])
+		opt := info.Opt
+		option := info.Option
+
+		if 0 != opt {
+			optsMap[opt] = info
 		}
-		optionsMap[opt] = &options[i]
+		optionsMap[option] = info
 	}
 
+	waitingKey := ""
 	// get option
 	for i := 1; i < argc; i++ {
 		argp := argv[i]
 
-		// value
-		if '-' != argp[0] {
-			params = append(params, argp)
-			continue
+		// all as one payload after this option signal
+		if "--" == argp {
+			params = append(params, strings.Join(argv[i+1:], " "))
+			return table, params
 		}
 
-		argpLen := len(argp)
-
-		if argpLen < 2 {
-			// TODO 只有一个横线
-			continue
-		}
-
-		// 长选项 option
-		if '-' == argp[1] {
-			if 2 < argpLen {
-				key, value := parseOption(argp, argpLen)
-				table[key] = value
-			} else {
-				// 只有两个横线
-				params = append(params, strings.Join(argv[i+1:], " "))
-				return table, params
+		// a long option
+		if strings.HasPrefix(argp, "--") {
+			key, val := parseLongOption(argp)
+			info := optionsMap[key]
+			if nil != info {
+				table[info.Name] = val
+				waitingKey = ""
 			}
 			continue
 		}
 
-		// 短选项 opt
-		argp = argp[1:argpLen]
-		argpLen -= 1
-		lst := argpLen - 1
-		for j := 0; j < argpLen; j++ {
-			opt := optionsMap[argp[j]]
-			if nil == opt {
-				continue
-			}
-			table[opt.Name] = ""
+		// a short option set
+		if '-' == argp[0] && 1 < len(argp) {
+			waitingKey = parseShortOption(table, argp, optsMap)
+			continue
 		}
-		// 最后一个选项opt需要判断是否需要参数
-		opt := optionsMap[argp[lst]]
-		if nil != opt && opt.HasParams && i+1 < argc {
-			payload := argv[i+1]
-			if '-' == payload[0] {
-				continue
-			}
-			table[opt.Name] = payload
-			i++
+
+		// a value of short opt
+		if "" != waitingKey {
+			table[waitingKey] = argp
+			waitingKey = ""
+			continue
 		}
+
+		// a payload
+		params = append(params, argp)
 	}
 
 	return table, params
